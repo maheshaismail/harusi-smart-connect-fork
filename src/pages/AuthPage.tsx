@@ -31,7 +31,33 @@ const AuthPage = () => {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
 
-  // Vendor-only fields
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+
+      if (result.error) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: String(result.error), variant: 'destructive' });
+        return;
+      }
+
+      if (result.redirected) {
+        return; // Browser is redirecting to Google
+      }
+
+      // Session set — navigate
+      navigate('/', { replace: true });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'Google sign-in failed', variant: 'destructive' });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   const [businessName, setBusinessName] = useState('');
   const [category, setCategory] = useState('');
   const [city, setCity] = useState('Dar es Salaam');
