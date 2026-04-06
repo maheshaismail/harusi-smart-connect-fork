@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Plus, Trash2, UserCheck, Clock, UserX, Loader2, Link as LinkIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import InvitationManager from '@/components/InvitationManager';
 

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { formatTZS } from '@/data/sampleData';
 import { Star, MapPin, BadgeCheck, ArrowLeft, Loader2, Phone, MessageCircle, Camera, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
