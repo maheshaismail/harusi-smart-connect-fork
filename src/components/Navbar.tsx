@@ -105,6 +105,16 @@ const Navbar = () => {
                     {item.label}
                   </Link>
                 ))}
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive bg-destructive/10"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin Dashboard
+                  </Link>
+                )}
                 {isVendor && (
                   <Link
                     to="/vendor-dashboard"
