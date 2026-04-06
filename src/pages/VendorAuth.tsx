@@ -33,12 +33,17 @@ const VendorAuth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      navigate('/vendor-dashboard');
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: error.message, variant: 'destructive' });
+      } else {
+        navigate('/vendor-dashboard', { replace: true });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'Login failed', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 

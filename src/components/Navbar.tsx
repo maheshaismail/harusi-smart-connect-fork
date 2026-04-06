@@ -1,42 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import LanguageToggle from './LanguageToggle';
 import { Home, Users, CalendarHeart, MessageCircle, Heart, Menu, X, LayoutDashboard, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const { t } = useLanguage();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { roles, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isVendor, setIsVendor] = useState(false);
 
-  useEffect(() => {
-    const checkVendor = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .eq('role', 'vendor')
-          .maybeSingle();
-        setIsVendor(!!data);
-      } else {
-        setIsVendor(false);
-      }
-    };
-    checkVendor();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => checkVendor());
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
+  const isVendor = roles.includes('vendor');
 
   const navItems = [
     { path: '/', label: t('home'), icon: Home },
@@ -80,7 +56,7 @@ const Navbar = () => {
             )}
             <LanguageToggle />
             <button
-              onClick={handleLogout}
+              onClick={signOut}
               className="p-2 text-muted-foreground hover:text-foreground transition-colors"
               title={t('logout')}
             >

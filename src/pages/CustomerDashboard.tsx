@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { CalendarHeart, Users, Calculator, MessageCircle, Heart, Sparkles, LogOut, Calendar, Bell } from 'lucide-react';
@@ -9,36 +10,29 @@ import Footer from '@/components/Footer';
 
 const CustomerDashboard = () => {
   const { t, language } = useLanguage();
-  const navigate = useNavigate();
-  const [userName, setUserName] = useState('');
+  const { user, signOut } = useAuth();
   const [pendingBookings, setPendingBookings] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '';
-      setUserName(name);
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
 
-      // Load counts in parallel
-      const [bookingsRes, convRes] = await Promise.all([
-        supabase.from('booking_requests').select('id', { count: 'exact', head: true }).eq('customer_id', session.user.id).eq('status', 'pending') as any,
-        supabase.from('chat_conversations').select('id', { count: 'exact', head: true }).eq('customer_id', session.user.id) as any,
-      ]);
-      setPendingBookings(bookingsRes.count || 0);
-      setUnreadMessages(convRes.count || 0);
+  // Load dashboard counts in background — does NOT block render
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      try {
+        const [bookingsRes, convRes] = await Promise.all([
+          supabase.from('booking_requests').select('id', { count: 'exact', head: true }).eq('customer_id', user.id).eq('status', 'pending') as any,
+          supabase.from('chat_conversations').select('id', { count: 'exact', head: true }).eq('customer_id', user.id) as any,
+        ]);
+        setPendingBookings(bookingsRes.count || 0);
+        setUnreadMessages(convRes.count || 0);
+      } catch {
+        // Non-critical — dashboard still works
+      }
     };
     load();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
+  }, [user]);
 
   const quickLinks = [
     { path: '/planner', icon: Sparkles, label: t('planner'), desc: language === 'sw' ? 'Panga harusi yako na AI' : 'AI-powered wedding planning', badge: 0 },
@@ -74,7 +68,7 @@ const CustomerDashboard = () => {
                   </span>
                 </Link>
               )}
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>
