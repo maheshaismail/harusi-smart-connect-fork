@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import LanguageToggle from './LanguageToggle';
-import { Home, Users, CalendarHeart, MessageCircle, Heart, Menu, X, LayoutDashboard, LogOut } from 'lucide-react';
+import { Home, Users, CalendarHeart, MessageCircle, Heart, Menu, X, LayoutDashboard, LogOut, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
@@ -13,6 +13,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const isVendor = roles.includes('vendor');
+  const isAdmin = roles.includes('admin');
 
   const navItems = [
     { path: '/', label: t('home'), icon: Home },
@@ -45,6 +46,15 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Admin</span>
+              </Link>
+            )}
             {isVendor && (
               <Link
                 to="/vendor-dashboard"
@@ -95,6 +105,16 @@ const Navbar = () => {
                     {item.label}
                   </Link>
                 ))}
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive bg-destructive/10"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin Dashboard
+                  </Link>
+                )}
                 {isVendor && (
                   <Link
                     to="/vendor-dashboard"

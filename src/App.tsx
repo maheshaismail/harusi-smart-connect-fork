@@ -28,6 +28,7 @@ const BudgetPage = lazy(() => import("./pages/BudgetPage"));
 const GuestsPage = lazy(() => import("./pages/GuestsPage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const AnimatedRoutes = () => {
           <Route path="/guests" element={<PageTransition><GuestsPage /></PageTransition>} />
           <Route path="/chat" element={<PageTransition><ChatPage /></PageTransition>} />
           <Route path="/favorites" element={<PageTransition><FavoritesPage /></PageTransition>} />
+          <Route path="/admin" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
       </Suspense>

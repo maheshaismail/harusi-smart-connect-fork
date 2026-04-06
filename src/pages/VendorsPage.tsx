@@ -19,7 +19,8 @@ const VendorsPage = () => {
       setLoading(true);
       const { data: dbVendors, error } = await supabase
         .from('vendor_profiles')
-        .select('id, business_name, category, city, description, description_sw, image_url, phone, price_from, verified');
+        .select('id, business_name, category, city, description, description_sw, image_url, phone, price_from, verified')
+        .eq('approval_status', 'approved');
 
       if (error) {
         console.error('Error fetching vendors:', error);
