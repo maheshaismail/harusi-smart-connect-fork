@@ -39,26 +39,43 @@ const AuthPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    console.debug('[Auth] Login attempt start');
+    const loginStart = performance.now();
 
-    if (error) {
-      setLoading(false);
-      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: error.message, variant: 'destructive' });
-      return;
-    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    // Check role and redirect immediately
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', data.user.id);
+      if (error) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: error.message, variant: 'destructive' });
+        return;
+      }
 
-    const roles = roleData?.map(r => r.role) || [];
-    // Navigate before clearing loading — AuthGuard will pick up the session instantly
-    if (roles.includes('vendor')) {
-      navigate('/vendor-dashboard', { replace: true });
-    } else {
+      console.debug('[Auth] Login API done in', Math.round(performance.now() - loginStart), 'ms');
+
+      // Fetch role in background to decide redirect target, but don't block on it
+      // Navigate immediately — role query is best-effort for redirect
+      try {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id);
+        const roles = roleData?.map(r => r.role) || [];
+        console.debug('[Auth] Role check done in', Math.round(performance.now() - loginStart), 'ms');
+        if (roles.includes('vendor')) {
+          navigate('/vendor-dashboard', { replace: true });
+          return;
+        }
+      } catch {
+        // Role fetch failed — default to customer dashboard
+        console.warn('[Auth] Role fetch failed, defaulting to customer dashboard');
+      }
+
       navigate('/', { replace: true });
+    } catch (err: any) {
+      console.error('[Auth] Login error:', err);
+      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: err?.message || 'Login failed', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,46 +91,47 @@ const AuthPage = () => {
     }
 
     setLoading(true);
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      });
 
-    if (authError || !authData.user) {
+      if (authError || !authData.user) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: authError?.message || 'Registration failed', variant: 'destructive' });
+        return;
+      }
+
+      // Insert role — fire and forget for speed
+      supabase.from('user_roles').insert({ user_id: authData.user.id, role: accountType } as any).then(() => {});
+
+      if (accountType === 'vendor') {
+        supabase.from('vendor_profiles').insert({
+          user_id: authData.user.id,
+          business_name: businessName,
+          category,
+          city,
+          description,
+          phone,
+        } as any).then(() => {});
+      }
+
+      if (phone) {
+        supabase.from('profiles').update({ phone } as any).eq('id', authData.user.id).then(() => {});
+      }
+
+      toast({ title: t('welcome'), description: t('accountCreated') });
+
+      if (accountType === 'vendor') {
+        navigate('/vendor-dashboard', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } catch (err: any) {
+      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: err?.message || 'Registration failed', variant: 'destructive' });
+    } finally {
       setLoading(false);
-      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: authError?.message || 'Registration failed', variant: 'destructive' });
-      return;
-    }
-
-    // Insert role
-    await supabase.from('user_roles').insert({ user_id: authData.user.id, role: accountType } as any);
-
-    if (accountType === 'vendor') {
-      await supabase.from('vendor_profiles').insert({
-        user_id: authData.user.id,
-        business_name: businessName,
-        category,
-        city,
-        description,
-        phone,
-      } as any);
-    }
-
-    // Update profile with phone
-    if (phone) {
-      await supabase.from('profiles').update({ phone } as any).eq('id', authData.user.id);
-    }
-
-    toast({
-      title: t('welcome'),
-      description: t('accountCreated'),
-    });
-
-    if (accountType === 'vendor') {
-      navigate('/vendor-dashboard', { replace: true });
-    } else {
-      navigate('/', { replace: true });
     }
   };
 
@@ -121,19 +139,24 @@ const AuthPage = () => {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      sonnerToast.success(
-        language === 'sw'
-          ? 'Angalia barua pepe yako kwa kiungo cha kubadilisha neno la siri'
-          : 'Check your email for a password reset link'
-      );
-      setAuthMode('login');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: error.message, variant: 'destructive' });
+      } else {
+        sonnerToast.success(
+          language === 'sw'
+            ? 'Angalia barua pepe yako kwa kiungo cha kubadilisha neno la siri'
+            : 'Check your email for a password reset link'
+        );
+        setAuthMode('login');
+      }
+    } catch (err: any) {
+      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: err?.message || 'Failed', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 

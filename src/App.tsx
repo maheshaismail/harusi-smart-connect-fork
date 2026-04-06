@@ -4,11 +4,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import InstallPrompt from "@/components/InstallPrompt";
 import PageTransition from "@/components/PageTransition";
-import { lazy, Suspense, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { lazy, Suspense } from "react";
 import { AnimatePresence } from "framer-motion";
 
 // Eager-loaded (critical path)
@@ -41,29 +41,21 @@ const PageLoader = () => (
   </div>
 );
 
+/** Waits for auth initialization, then redirects unauthenticated users. */
 const AuthGuard = ({ children }: { children: React.ReactNode }) => {
-  const [loading, setLoading] = useState(true);
-  const [authed, setAuthed] = useState(false);
+  const { isReady, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    // Restore session from storage first
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthed(!!session);
-      setLoading(false);
-    });
+  if (!isReady) return <PageLoader />;
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+};
 
-    // Then listen for subsequent auth changes (sign in/out)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthed(!!session);
-      // Only clear loading if it's still true (edge case)
-      setLoading(false);
-    });
+/** Redirect authenticated users away from auth pages. */
+const PublicOnlyGuard = ({ children }: { children: React.ReactNode }) => {
+  const { isReady, isAuthenticated } = useAuth();
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) return <PageLoader />;
-  if (!authed) return <Navigate to="/auth" replace />;
+  if (!isReady) return <PageLoader />;
+  if (isAuthenticated) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -94,34 +86,38 @@ const AnimatedRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/reset-password" element={
-              <Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>
-            } />
-            <Route path="/vendor-auth" element={
-              <Suspense fallback={<PageLoader />}><VendorAuth /></Suspense>
-            } />
-            <Route path="/rsvp/:token" element={
-              <Suspense fallback={<PageLoader />}><RsvpPage /></Suspense>
-            } />
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes — redirect to dashboard if already logged in */}
+              <Route path="/auth" element={
+                <PublicOnlyGuard><AuthPage /></PublicOnlyGuard>
+              } />
+              <Route path="/reset-password" element={
+                <Suspense fallback={<PageLoader />}><ResetPassword /></Suspense>
+              } />
+              <Route path="/vendor-auth" element={
+                <Suspense fallback={<PageLoader />}><VendorAuth /></Suspense>
+              } />
+              <Route path="/rsvp/:token" element={
+                <Suspense fallback={<PageLoader />}><RsvpPage /></Suspense>
+              } />
 
-            {/* Protected routes with navbar */}
-            <Route path="/*" element={
-              <AuthGuard>
-                <Navbar />
-                <AnimatedRoutes />
-                <InstallPrompt />
-              </AuthGuard>
-            } />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              {/* Protected routes with navbar */}
+              <Route path="/*" element={
+                <AuthGuard>
+                  <Navbar />
+                  <AnimatedRoutes />
+                  <InstallPrompt />
+                </AuthGuard>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </LanguageProvider>
   </QueryClientProvider>
 );
