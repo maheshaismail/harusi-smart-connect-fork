@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Heart, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 

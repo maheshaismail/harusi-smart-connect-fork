@@ -5,7 +5,7 @@ import { cities, formatTZS } from '@/data/sampleData';
 import { CalendarHeart, Users, MapPin, Wallet, Sparkles, Lightbulb, Clock, Star, Loader2, MessageCircle, Send, Calendar } from 'lucide-react';
 import BookingForm from '@/components/BookingForm';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface BudgetItem {

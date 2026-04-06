@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { CalendarHeart, Users, Calculator, MessageCircle, Heart, Sparkles, LogOut, Calendar, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';

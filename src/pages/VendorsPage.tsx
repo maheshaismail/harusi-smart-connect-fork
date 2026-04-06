@@ -4,7 +4,7 @@ import { categories, cities, formatTZS, Vendor } from '@/data/sampleData';
 import { sampleVendors } from '@/data/sampleData';
 import VendorCard from '@/components/VendorCard';
 import { Search, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 
 const VendorsPage = () => {
   const { t, language } = useLanguage();

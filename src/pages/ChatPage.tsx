@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Send, ArrowLeft, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
