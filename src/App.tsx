@@ -17,7 +17,7 @@ import AuthPage from "./pages/AuthPage";
 // Lazy-loaded pages
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const RsvpPage = lazy(() => import("./pages/RsvpPage"));
-const CustomerDashboard = lazy(() => import("./pages/CustomerDashboard"));
+const HomeRedirect = lazy(() => import("./components/HomeRedirect"));
 const MyBookingsPage = lazy(() => import("./pages/MyBookingsPage"));
 const VendorsPage = lazy(() => import("./pages/VendorsPage"));
 const VendorProfile = lazy(() => import("./pages/VendorProfile"));
@@ -67,7 +67,7 @@ const AnimatedRoutes = () => {
     <AnimatePresence mode="wait">
       <Suspense fallback={<PageLoader />}>
         <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<PageTransition><CustomerDashboard /></PageTransition>} />
+          <Route path="/" element={<PageTransition><HomeRedirect /></PageTransition>} />
           <Route path="/my-bookings" element={<PageTransition><MyBookingsPage /></PageTransition>} />
           <Route path="/vendors" element={<PageTransition><VendorsPage /></PageTransition>} />
           <Route path="/vendor/:id" element={<PageTransition><VendorProfile /></PageTransition>} />
