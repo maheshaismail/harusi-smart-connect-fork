@@ -49,7 +49,7 @@ const AuthPage = () => {
         return; // Browser is redirecting to Google
       }
 
-      // Session set — navigate
+      // Session set — HomeRedirect will handle role-based routing
       navigate('/', { replace: true });
     } catch (err: any) {
       toast({ title: 'Error', description: err?.message || 'Google sign-in failed', variant: 'destructive' });
