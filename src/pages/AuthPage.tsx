@@ -221,8 +221,8 @@ const AuthPage = () => {
             </div>
           )}
 
-          {/* Google Sign-In */}
-          {authMode !== 'forgot' && (
+          {/* Google Sign-In — only for login or customer registration */}
+          {authMode !== 'forgot' && !(authMode === 'register' && accountType === 'vendor') && (
             <div className="mb-6">
               <Button
                 type="button"
