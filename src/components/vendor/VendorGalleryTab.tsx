@@ -29,6 +29,8 @@ const VendorGalleryTab = ({ vendorId, gallery, setGallery }: Props) => {
   const [showAdd, setShowAdd] = useState(false);
   const [newImage, setNewImage] = useState({ image_url: '', caption: '', caption_sw: '' });
   const [uploading, setUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCaption, setEditCaption] = useState({ caption: '', caption_sw: '' });
 
   const handleAdd = async () => {
     if (!newImage.image_url) {
