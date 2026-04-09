@@ -1,19 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { formatTZS } from '@/data/sampleData';
-import { motion } from 'framer-motion';
-import { Package, Calendar, User, LogOut, Plus, Trash2, CheckCircle, XCircle, Image as ImageIcon } from 'lucide-react';
-import ImageUpload from '@/components/ImageUpload';
+import { Package, Calendar, User, LogOut, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import VendorProfileTab from '@/components/vendor/VendorProfileTab';
 import VendorGalleryTab from '@/components/vendor/VendorGalleryTab';
+import VendorPackagesTab from '@/components/vendor/VendorPackagesTab';
+import VendorBookingsTab from '@/components/vendor/VendorBookingsTab';
 
 interface VendorProfile {
   id: string;
@@ -26,6 +23,7 @@ interface VendorProfile {
   price_from: number;
   verified: boolean;
   image_url: string;
+  approval_status: string;
 }
 
 interface VendorPackage {
@@ -62,6 +60,7 @@ const VendorDashboard = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [packages, setPackages] = useState<VendorPackage[]>([]);
@@ -71,33 +70,7 @@ const VendorDashboard = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [editProfile, setEditProfile] = useState<Partial<VendorProfile>>({});
 
-  const [showNewPkg, setShowNewPkg] = useState(false);
-  const [newPkg, setNewPkg] = useState({ name: '', name_sw: '', price: 0, description: '', description_sw: '', image_url: '' });
-
-  useEffect(() => {
-    // Listen for auth state changes to persist login across navigation
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        loadData(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        navigate('/vendor-auth');
-      }
-    });
-
-    // Initial check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        loadData(session.user.id);
-      } else {
-        setLoading(false);
-        navigate('/vendor-auth');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadData = async (userId: string) => {
+  const loadData = useCallback(async (userId: string) => {
     setLoading(true);
     const { data: vp } = await supabase
       .from('vendor_profiles')
@@ -107,14 +80,12 @@ const VendorDashboard = () => {
 
     if (!vp) {
       setLoading(false);
-      navigate('/vendor-auth');
       return;
     }
 
     setProfile(vp);
     setEditProfile(vp);
 
-    // Load packages, bookings, gallery in parallel
     const [pkgsRes, bksRes, galRes] = await Promise.all([
       supabase.from('vendor_packages').select('*').eq('vendor_id', vp.id) as any,
       supabase.from('booking_requests').select('*').eq('vendor_id', vp.id).order('created_at', { ascending: false }) as any,
@@ -125,7 +96,13 @@ const VendorDashboard = () => {
     setBookings(bksRes.data || []);
     setGallery(galRes.data || []);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadData(user.id);
+    }
+  }, [user, loadData]);
 
   const handleUpdateProfile = async () => {
     if (!profile) return;
@@ -150,187 +127,150 @@ const VendorDashboard = () => {
     }
   };
 
-  const handleAddPackage = async () => {
-    if (!profile || !newPkg.name) return;
-    const { data, error } = await supabase
-      .from('vendor_packages')
-      .insert({ vendor_id: profile.id, ...newPkg } as any)
-      .select()
-      .single() as any;
-
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } else {
-      setPackages([...packages, data]);
-      setNewPkg({ name: '', name_sw: '', price: 0, description: '', description_sw: '', image_url: '' });
-      setShowNewPkg(false);
-      toast({ title: language === 'sw' ? 'Kifurushi kimeongezwa!' : 'Package added!' });
-    }
-  };
-
-  const handleDeletePackage = async (pkgId: string) => {
-    await supabase.from('vendor_packages').delete().eq('id', pkgId) as any;
-    setPackages(packages.filter(p => p.id !== pkgId));
-  };
-
-  const handleBookingStatus = async (bookingId: string, status: string) => {
-    await supabase.from('booking_requests').update({ status } as any).eq('id', bookingId) as any;
-    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status } : b));
-  };
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+    await signOut();
+    navigate('/auth', { replace: true });
   };
+
+  const pendingBookings = bookings.filter(b => b.status === 'pending').length;
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">{t('loading')}</p></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto" />
+          <h2 className="text-lg font-semibold">
+            {language === 'sw' ? 'Hakuna wasifu wa mtoa huduma' : 'No vendor profile found'}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {language === 'sw' ? 'Tafadhali jisajili kama mtoa huduma kwanza' : 'Please register as a vendor first'}
+          </p>
+          <Button onClick={() => navigate('/auth', { replace: true })} variant="outline">
+            {language === 'sw' ? 'Rudi' : 'Go Back'}
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-background pt-20 pb-24 md:pb-8">
       <div className="container max-w-2xl">
-        <div className="flex items-center justify-between mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-display font-bold">{t('vendorDashboard')}</h1>
-            <p className="text-sm text-muted-foreground">{profile?.business_name}</p>
+            <p className="text-sm text-muted-foreground">{profile.business_name}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
 
-        <Tabs defaultValue="profile">
+        {/* Approval status banner */}
+        {profile.approval_status === 'pending' && (
+          <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 mb-4 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-yellow-800 dark:text-yellow-300">
+                {language === 'sw' ? 'Akaunti yako inasubiri kuidhinishwa' : 'Your account is pending approval'}
+              </p>
+              <p className="text-yellow-700 dark:text-yellow-400 text-xs mt-0.5">
+                {language === 'sw'
+                  ? 'Utaonekana kwa wateja baada ya msimamizi kukuidhinisha. Endelea kuandaa wasifu wako.'
+                  : 'You will be visible to customers after admin approval. Meanwhile, set up your profile.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {profile.approval_status === 'rejected' && (
+          <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 mb-4 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-800 dark:text-red-300">
+                {language === 'sw' ? 'Akaunti yako imekataliwa' : 'Your account was rejected'}
+              </p>
+              <p className="text-red-700 dark:text-red-400 text-xs mt-0.5">
+                {language === 'sw'
+                  ? 'Tafadhali wasiliana na msaada kwa maelezo zaidi.'
+                  : 'Please contact support for more details.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Stats overview */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="rounded-xl border border-border bg-card p-3 text-center">
+            <p className="text-2xl font-bold text-primary">{packages.length}</p>
+            <p className="text-xs text-muted-foreground">{language === 'sw' ? 'Vifurushi' : 'Packages'}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-3 text-center">
+            <p className="text-2xl font-bold text-primary">{gallery.length}</p>
+            <p className="text-xs text-muted-foreground">{language === 'sw' ? 'Picha' : 'Photos'}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-3 text-center">
+            <p className="text-2xl font-bold text-primary">{bookings.length}</p>
+            <p className="text-xs text-muted-foreground">{language === 'sw' ? 'Maombi' : 'Inquiries'}</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="bookings">
           <TabsList className="w-full">
-            <TabsTrigger value="profile" className="flex-1"><User className="h-4 w-4 mr-1" />{t('profile')}</TabsTrigger>
-            <TabsTrigger value="packages" className="flex-1"><Package className="h-4 w-4 mr-1" />{t('myPackages')}</TabsTrigger>
-            <TabsTrigger value="gallery" className="flex-1"><ImageIcon className="h-4 w-4 mr-1" />{language === 'sw' ? 'Galari' : 'Gallery'}</TabsTrigger>
             <TabsTrigger value="bookings" className="flex-1 relative">
-              <Calendar className="h-4 w-4 mr-1" />{t('myBookings')}
-              {bookings.filter(b => b.status === 'pending').length > 0 && (
+              <Calendar className="h-4 w-4 mr-1" />
+              {language === 'sw' ? 'Maombi' : 'Inquiries'}
+              {pendingBookings > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {bookings.filter(b => b.status === 'pending').length}
+                  {pendingBookings}
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="profile" className="flex-1">
+              <User className="h-4 w-4 mr-1" />{t('profile')}
+            </TabsTrigger>
+            <TabsTrigger value="packages" className="flex-1">
+              <Package className="h-4 w-4 mr-1" />{language === 'sw' ? 'Vifurushi' : 'Packages'}
+            </TabsTrigger>
+            <TabsTrigger value="gallery" className="flex-1">
+              <ImageIcon className="h-4 w-4 mr-1" />{language === 'sw' ? 'Galari' : 'Gallery'}
+            </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="bookings" className="mt-4">
+            <VendorBookingsTab bookings={bookings} setBookings={setBookings} />
+          </TabsContent>
+
           <TabsContent value="profile" className="mt-4">
-            {profile && (
-              <VendorProfileTab
-                profile={profile}
-                editingProfile={editingProfile}
-                editProfile={editProfile}
-                setEditingProfile={setEditingProfile}
-                setEditProfile={setEditProfile}
-                onSave={handleUpdateProfile}
-              />
-            )}
+            <VendorProfileTab
+              profile={profile}
+              editingProfile={editingProfile}
+              editProfile={editProfile}
+              setEditingProfile={setEditingProfile}
+              setEditProfile={setEditProfile}
+              onSave={handleUpdateProfile}
+            />
           </TabsContent>
 
-          {/* Packages Tab */}
-          <TabsContent value="packages" className="mt-4 space-y-3">
-            {packages.map(pkg => (
-              <div key={pkg.id} className="rounded-xl border border-border bg-card p-4 flex items-start gap-3">
-                {pkg.image_url && (
-                  <img src={pkg.image_url} alt={pkg.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold">{language === 'sw' ? pkg.name_sw || pkg.name : pkg.name}</h3>
-                  <p className="text-sm text-primary font-bold">{formatTZS(pkg.price)}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{language === 'sw' ? pkg.description_sw || pkg.description : pkg.description}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => handleDeletePackage(pkg.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
-
-            {showNewPkg ? (
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div>
-                  <Label>{t('packageName')} (EN)</Label>
-                  <Input value={newPkg.name} onChange={e => setNewPkg({ ...newPkg, name: e.target.value })} />
-                </div>
-                <div>
-                  <Label>{t('packageName')} (SW)</Label>
-                  <Input value={newPkg.name_sw} onChange={e => setNewPkg({ ...newPkg, name_sw: e.target.value })} />
-                </div>
-                <div>
-                  <Label>{t('packagePrice')} (TZS)</Label>
-                  <Input type="number" value={newPkg.price} onChange={e => setNewPkg({ ...newPkg, price: parseInt(e.target.value) || 0 })} />
-                </div>
-                <div>
-                  <Label>{t('packageDescription')} (EN)</Label>
-                  <Textarea value={newPkg.description} onChange={e => setNewPkg({ ...newPkg, description: e.target.value })} rows={2} />
-                </div>
-                <div>
-                  <Label>{t('packageDescription')} (SW)</Label>
-                  <Textarea value={newPkg.description_sw} onChange={e => setNewPkg({ ...newPkg, description_sw: e.target.value })} rows={2} />
-                </div>
-                <div>
-                  <Label>{language === 'sw' ? 'Picha ya Kifurushi' : 'Package Photo'}</Label>
-                  <ImageUpload currentUrl={newPkg.image_url} onUploaded={(url) => setNewPkg({ ...newPkg, image_url: url })} folder="packages" />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleAddPackage} className="bg-gold-gradient text-primary-foreground shadow-gold">{t('save')}</Button>
-                  <Button variant="outline" onClick={() => setShowNewPkg(false)}>{t('cancel')}</Button>
-                </div>
-              </div>
-            ) : (
-              <Button onClick={() => setShowNewPkg(true)} className="w-full" variant="outline">
-                <Plus className="h-4 w-4 mr-1" /> {t('addPackage')}
-              </Button>
-            )}
+          <TabsContent value="packages" className="mt-4">
+            <VendorPackagesTab vendorId={profile.id} packages={packages} setPackages={setPackages} />
           </TabsContent>
 
-          {/* Gallery Tab */}
           <TabsContent value="gallery" className="mt-4">
-            {profile && (
-              <VendorGalleryTab
-                vendorId={profile.id}
-                gallery={gallery}
-                setGallery={setGallery}
-              />
-            )}
-          </TabsContent>
-
-          {/* Bookings Tab */}
-          <TabsContent value="bookings" className="mt-4 space-y-3">
-            {bookings.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">{t('noResults')}</p>
-            )}
-            {bookings.map(bk => (
-              <div key={bk.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-semibold">{bk.customer_name}</h3>
-                    <p className="text-xs text-muted-foreground">{bk.customer_email} • {bk.customer_phone}</p>
-                  </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    bk.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                    bk.status === 'declined' ? 'bg-red-100 text-red-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {bk.status === 'accepted' ? (language === 'sw' ? 'Imekubaliwa' : 'Accepted') :
-                     bk.status === 'declined' ? (language === 'sw' ? 'Imekataliwa' : 'Declined') :
-                     (language === 'sw' ? 'Inasubiri' : 'Pending')}
-                  </span>
-                </div>
-                {bk.event_date && <p className="text-sm"><strong>{language === 'sw' ? 'Tarehe' : 'Date'}:</strong> {bk.event_date}</p>}
-                {bk.message && <p className="text-sm text-muted-foreground mt-1">{bk.message}</p>}
-                {bk.status === 'pending' && (
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" onClick={() => handleBookingStatus(bk.id, 'accepted')} className="bg-green-600 hover:bg-green-700 text-white">
-                      <CheckCircle className="h-3.5 w-3.5 mr-1" /> {language === 'sw' ? 'Kubali' : 'Accept'}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleBookingStatus(bk.id, 'declined')}>
-                      <XCircle className="h-3.5 w-3.5 mr-1" /> {language === 'sw' ? 'Kataa' : 'Decline'}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+            <VendorGalleryTab vendorId={profile.id} gallery={gallery} setGallery={setGallery} />
           </TabsContent>
         </Tabs>
       </div>
