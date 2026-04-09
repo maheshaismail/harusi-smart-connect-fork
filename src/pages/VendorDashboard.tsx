@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Package, Calendar, User, LogOut, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Package, Calendar, User, LogOut, Image as ImageIcon, AlertCircle, MessageCircle } from 'lucide-react';
 import VendorProfileTab from '@/components/vendor/VendorProfileTab';
 import VendorGalleryTab from '@/components/vendor/VendorGalleryTab';
 import VendorPackagesTab from '@/components/vendor/VendorPackagesTab';
