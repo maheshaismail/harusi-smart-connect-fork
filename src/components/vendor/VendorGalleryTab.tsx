@@ -71,6 +71,25 @@ const VendorGalleryTab = ({ vendorId, gallery, setGallery }: Props) => {
     }
   };
 
+  const handleEditCaption = async (id: string) => {
+    const { error } = await supabase
+      .from('vendor_gallery')
+      .update({ caption: editCaption.caption || null, caption_sw: editCaption.caption_sw || null })
+      .eq('id', id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      setGallery(gallery.map(g => g.id === id ? { ...g, ...editCaption } : g));
+      setEditingId(null);
+      toast({ title: language === 'sw' ? 'Imehifadhiwa!' : 'Saved!' });
+    }
+  };
+
+  const startEdit = (img: GalleryImage) => {
+    setEditingId(img.id);
+    setEditCaption({ caption: img.caption || '', caption_sw: img.caption_sw || '' });
+  };
+
   return (
     <div className="space-y-3">
       {gallery.length === 0 && !showAdd && (
@@ -89,19 +108,56 @@ const VendorGalleryTab = ({ vendorId, gallery, setGallery }: Props) => {
             className="relative group rounded-xl overflow-hidden border border-border"
           >
             <img src={img.image_url} alt={img.caption || ''} className="w-full h-32 object-cover" />
-            {(img.caption || img.caption_sw) && (
-              <p className="text-xs text-muted-foreground p-2 truncate">
-                {language === 'sw' ? img.caption_sw || img.caption : img.caption}
-              </p>
+
+            {editingId === img.id ? (
+              <div className="p-2 space-y-1">
+                <Input
+                  placeholder="Caption (EN)"
+                  value={editCaption.caption}
+                  onChange={e => setEditCaption({ ...editCaption, caption: e.target.value })}
+                  className="text-xs h-7"
+                />
+                <Input
+                  placeholder="Caption (SW)"
+                  value={editCaption.caption_sw}
+                  onChange={e => setEditCaption({ ...editCaption, caption_sw: e.target.value })}
+                  className="text-xs h-7"
+                />
+                <div className="flex gap-1">
+                  <Button size="sm" className="h-6 text-xs px-2" onClick={() => handleEditCaption(img.id)}>
+                    <Save className="h-3 w-3 mr-1" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => setEditingId(null)}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              (img.caption || img.caption_sw) && (
+                <p className="text-xs text-muted-foreground p-2 truncate">
+                  {language === 'sw' ? img.caption_sw || img.caption : img.caption}
+                </p>
+              )
             )}
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => handleDelete(img.id)}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => startEdit(img)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => handleDelete(img.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </motion.div>
         ))}
       </div>
