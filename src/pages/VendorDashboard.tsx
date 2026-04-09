@@ -248,6 +248,9 @@ const VendorDashboard = () => {
             <TabsTrigger value="gallery" className="flex-1">
               <ImageIcon className="h-4 w-4 mr-1" />{language === 'sw' ? 'Galari' : 'Gallery'}
             </TabsTrigger>
+            <TabsTrigger value="messages" className="flex-1">
+              <MessageCircle className="h-4 w-4 mr-1" />{language === 'sw' ? 'Ujumbe' : 'Chat'}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bookings" className="mt-4">
@@ -271,6 +274,19 @@ const VendorDashboard = () => {
 
           <TabsContent value="gallery" className="mt-4">
             <VendorGalleryTab vendorId={profile.id} gallery={gallery} setGallery={setGallery} />
+          </TabsContent>
+
+          <TabsContent value="messages" className="mt-4">
+            <div className="rounded-xl border border-border bg-card p-4 text-center">
+              <MessageCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">
+                {language === 'sw' ? 'Tazama mazungumzo yako yote' : 'View all your conversations'}
+              </p>
+              <Button onClick={() => navigate('/chat')} variant="outline">
+                <MessageCircle className="h-4 w-4 mr-1" />
+                {language === 'sw' ? 'Fungua Mazungumzo' : 'Open Messages'}
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
