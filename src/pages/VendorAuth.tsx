@@ -154,7 +154,10 @@ const VendorAuth = () => {
             </div>
             <div>
               <Label>{t('phone')}</Label>
-              <Input type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+              <div className="flex">
+                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+255</span>
+                <Input type="tel" className="rounded-l-none" placeholder="7XXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+              </div>
             </div>
             <div>
               <Label>{t('category')} *</Label>

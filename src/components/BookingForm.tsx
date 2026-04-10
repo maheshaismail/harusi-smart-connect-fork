@@ -81,7 +81,10 @@ const BookingForm = ({ vendorId, packageId, triggerLabel }: BookingFormProps) =>
           </div>
           <div>
             <Label>{language === 'sw' ? 'Nambari ya simu' : 'Phone'} *</Label>
-            <Input type="tel" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} required />
+            <div className="flex">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+255</span>
+              <Input type="tel" className="rounded-l-none" placeholder="7XXXXXXXX" value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} required />
+            </div>
           </div>
           <div>
             <Label>{language === 'sw' ? 'Barua pepe' : 'Email'}</Label>

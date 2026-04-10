@@ -54,7 +54,10 @@ const VendorProfileTab = ({ profile, editingProfile, editProfile, setEditingProf
           </div>
           <div>
             <Label>{t('phone')}</Label>
-            <Input value={editProfile.phone || ''} onChange={e => setEditProfile({ ...editProfile, phone: e.target.value })} />
+            <div className="flex">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">+255</span>
+              <Input type="tel" className="rounded-l-none" placeholder="7XXXXXXXX" value={editProfile.phone || ''} onChange={e => setEditProfile({ ...editProfile, phone: e.target.value })} />
+            </div>
           </div>
           <div>
             <Label>{language === 'sw' ? 'Bei ya kuanzia (TZS)' : 'Starting price (TZS)'}</Label>
