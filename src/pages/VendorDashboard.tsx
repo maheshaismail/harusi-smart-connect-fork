@@ -133,6 +133,7 @@ const VendorDashboard = () => {
   };
 
   const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+  const isApproved = profile?.approval_status === 'approved';
 
   if (loading) {
     return (
