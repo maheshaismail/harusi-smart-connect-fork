@@ -119,37 +119,39 @@ const AuthPage = () => {
 
     setLoading(true);
     try {
+      const metadata: Record<string, string> = { full_name: fullName, account_type: accountType };
+      if (accountType === 'vendor') {
+        metadata.business_name = businessName;
+        metadata.category = category;
+        metadata.city = city;
+        metadata.description = description;
+        metadata.phone = phone;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: { data: metadata },
       });
 
-      if (authError || !authData.user) {
-        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: authError?.message || 'Registration failed', variant: 'destructive' });
+      if (authError) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: authError.message, variant: 'destructive' });
         return;
       }
 
-      // Insert role — fire and forget for speed
-      supabase.from('user_roles').insert({ user_id: authData.user.id, role: accountType } as any).then(() => {});
-
-      if (accountType === 'vendor') {
-        supabase.from('vendor_profiles').insert({
-          user_id: authData.user.id,
-          business_name: businessName,
-          category,
-          city,
-          description,
-          phone,
-        } as any).then(() => {});
-      }
-
-      if (phone) {
-        supabase.from('profiles').update({ phone } as any).eq('id', authData.user.id).then(() => {});
+      // If email confirmation is required, session will be null
+      if (authData.user && !authData.session) {
+        toast({
+          title: language === 'sw' ? 'Angalia barua pepe yako' : 'Check your email',
+          description: language === 'sw'
+            ? 'Tumekutumia kiungo cha kuthibitisha akaunti yako. Bonyeza kiungo hicho kisha ingia.'
+            : 'We sent you a confirmation link. Please verify your email then log in.',
+        });
+        setAuthMode('login');
+        return;
       }
 
       toast({ title: t('welcome'), description: t('accountCreated') });
-
       if (accountType === 'vendor') {
         navigate('/vendor-dashboard', { replace: true });
       } else {
