@@ -229,12 +229,12 @@ const VendorDashboard = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="bookings">
+        <Tabs defaultValue={isApproved ? "bookings" : "profile"}>
           <TabsList className="w-full">
-            <TabsTrigger value="bookings" className="flex-1 relative">
+            <TabsTrigger value="bookings" className="flex-1 relative" disabled={!isApproved}>
               <Calendar className="h-4 w-4 mr-1" />
               {language === 'sw' ? 'Maombi' : 'Inquiries'}
-              {pendingBookings > 0 && (
+              {pendingBookings > 0 && isApproved && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                   {pendingBookings}
                 </span>
@@ -243,13 +243,13 @@ const VendorDashboard = () => {
             <TabsTrigger value="profile" className="flex-1">
               <User className="h-4 w-4 mr-1" />{t('profile')}
             </TabsTrigger>
-            <TabsTrigger value="packages" className="flex-1">
+            <TabsTrigger value="packages" className="flex-1" disabled={!isApproved}>
               <Package className="h-4 w-4 mr-1" />{language === 'sw' ? 'Vifurushi' : 'Packages'}
             </TabsTrigger>
-            <TabsTrigger value="gallery" className="flex-1">
+            <TabsTrigger value="gallery" className="flex-1" disabled={!isApproved}>
               <ImageIcon className="h-4 w-4 mr-1" />{language === 'sw' ? 'Galari' : 'Gallery'}
             </TabsTrigger>
-            <TabsTrigger value="messages" className="flex-1">
+            <TabsTrigger value="messages" className="flex-1" disabled={!isApproved}>
               <MessageCircle className="h-4 w-4 mr-1" />{language === 'sw' ? 'Ujumbe' : 'Chat'}
             </TabsTrigger>
           </TabsList>
