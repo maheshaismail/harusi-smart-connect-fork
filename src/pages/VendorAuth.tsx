@@ -54,39 +54,46 @@ const VendorAuth = () => {
       return;
     }
     setLoading(true);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            account_type: 'vendor',
+            business_name: businessName,
+            category,
+            city,
+            description,
+            phone,
+          },
+        },
+      });
 
-    // Sign up
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
+      if (authError) {
+        toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: authError.message, variant: 'destructive' });
+        return;
+      }
 
-    if (authError || !authData.user) {
-      setLoading(false);
-      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: authError?.message || 'Registration failed', variant: 'destructive' });
-      return;
-    }
+      // If email confirmation required, session will be null
+      if (authData.user && !authData.session) {
+        toast({
+          title: language === 'sw' ? 'Angalia barua pepe yako' : 'Check your email',
+          description: language === 'sw'
+            ? 'Tumekutumia kiungo cha kuthibitisha akaunti yako. Bonyeza kiungo hicho kisha ingia.'
+            : 'We sent you a confirmation link. Please verify your email then log in.',
+        });
+        setIsLogin(true);
+        return;
+      }
 
-    // Insert vendor role
-    await supabase.from('user_roles').insert({ user_id: authData.user.id, role: 'vendor' } as any);
-
-    // Create vendor profile
-    const { error: profileError } = await supabase.from('vendor_profiles').insert({
-      user_id: authData.user.id,
-      business_name: businessName,
-      category,
-      city,
-      description,
-      phone,
-    } as any);
-
-    setLoading(false);
-    if (profileError) {
-      toast({ title: language === 'sw' ? 'Hitilafu' : 'Error', description: profileError.message, variant: 'destructive' });
-    } else {
       toast({ title: language === 'sw' ? 'Karibu!' : 'Welcome!', description: language === 'sw' ? 'Akaunti yako imeundwa' : 'Your account has been created' });
       navigate('/vendor-dashboard');
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'Registration failed', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
