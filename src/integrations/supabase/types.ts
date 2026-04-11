@@ -232,6 +232,42 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          couple_name: string
+          created_at: string
+          event_date: string | null
+          event_time: string | null
+          id: string
+          personal_note: string | null
+          updated_at: string
+          user_id: string
+          venue: string | null
+        }
+        Insert: {
+          couple_name: string
+          created_at?: string
+          event_date?: string | null
+          event_time?: string | null
+          id?: string
+          personal_note?: string | null
+          updated_at?: string
+          user_id: string
+          venue?: string | null
+        }
+        Update: {
+          couple_name?: string
+          created_at?: string
+          event_date?: string | null
+          event_time?: string | null
+          id?: string
+          personal_note?: string | null
+          updated_at?: string
+          user_id?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
       planner_tasks: {
         Row: {
           category: string | null

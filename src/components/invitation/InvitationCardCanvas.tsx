@@ -9,6 +9,7 @@ interface InvitationCardCanvasProps {
   eventTime: string;
   venue: string;
   personalNote: string;
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
 const CARD_W = 1080;
@@ -20,6 +21,7 @@ const InvitationCardCanvas = ({
   eventTime,
   venue,
   personalNote,
+  onCanvasReady,
 }: InvitationCardCanvasProps) => {
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -159,7 +161,10 @@ const InvitationCardCanvas = ({
 
   useEffect(() => {
     drawCard();
-  }, [drawCard]);
+    if (canvasRef.current && onCanvasReady) {
+      onCanvasReady(canvasRef.current);
+    }
+  }, [drawCard, onCanvasReady]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
