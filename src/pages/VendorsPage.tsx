@@ -63,12 +63,10 @@ const VendorsPage = () => {
         };
       });
 
-      // Merge: real vendors first, then sample data as fallback if no real vendors
-      if (mapped.length > 0) {
-        setVendors(mapped);
-      } else {
-        setVendors(sampleVendors);
-      }
+      // Merge: real vendors first, then append sample data (exclude duplicates by name)
+      const realNames = new Set(mapped.map(v => v.name.toLowerCase()));
+      const uniqueSamples = sampleVendors.filter(s => !realNames.has(s.name.toLowerCase()));
+      setVendors([...mapped, ...uniqueSamples]);
       setLoading(false);
     };
 
