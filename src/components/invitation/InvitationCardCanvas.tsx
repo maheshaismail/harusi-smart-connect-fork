@@ -161,7 +161,10 @@ const InvitationCardCanvas = ({
 
   useEffect(() => {
     drawCard();
-  }, [drawCard]);
+    if (canvasRef.current && onCanvasReady) {
+      onCanvasReady(canvasRef.current);
+    }
+  }, [drawCard, onCanvasReady]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
