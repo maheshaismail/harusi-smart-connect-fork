@@ -9,6 +9,7 @@ interface InvitationCardCanvasProps {
   eventTime: string;
   venue: string;
   personalNote: string;
+  onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
 const CARD_W = 1080;
