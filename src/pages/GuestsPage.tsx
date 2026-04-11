@@ -142,12 +142,15 @@ const GuestsPage = () => {
               onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             />
-            <input
-              placeholder={t('phone')}
-              value={newGuest.phone}
-              onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            />
+            <div className="flex">
+              <span className="inline-flex items-center rounded-l-lg border border-r-0 border-border bg-muted px-3 text-sm text-muted-foreground">+255</span>
+              <input
+                placeholder="7XXXXXXXX"
+                value={newGuest.phone}
+                onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
+                className="w-full rounded-r-lg rounded-l-none border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
             <div className="flex gap-2">
               <button onClick={addGuest} className="flex-1 rounded-lg bg-gold-gradient py-2 text-sm font-semibold text-primary-foreground">{t('save')}</button>
               <button onClick={() => setShowForm(false)} className="flex-1 rounded-lg border border-border py-2 text-sm font-medium">{t('cancel')}</button>
