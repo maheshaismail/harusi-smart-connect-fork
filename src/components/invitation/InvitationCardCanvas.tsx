@@ -21,6 +21,7 @@ const InvitationCardCanvas = ({
   eventTime,
   venue,
   personalNote,
+  onCanvasReady,
 }: InvitationCardCanvasProps) => {
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
